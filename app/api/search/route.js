@@ -8,10 +8,15 @@ export async function POST(request) {
     const encodedQuery = encodeURIComponent(query);
 
     const sources = [
-      { name: 'Merrjep.al', url: `https://www.merrjep.al/njoftime?q=${encodedQuery}&kategoria=0` },
+      { name: 'Merrjep.al', url: `https://www.merrjep.al/njoftime/${encodedQuery}` },
       { name: 'Njoftime.al', url: `https://www.njoftime.al/?s=${encodedQuery}` },
       { name: 'Dyqan24', url: `https://dyqan24.al/?s=${encodedQuery}` },
       { name: 'Okazion.al', url: `https://okazion.al/?s=${encodedQuery}` },
+      { name: 'Kokoshop.al', url: `https://kokoshop.al/?s=${encodedQuery}` },
+      { name: 'Gjirafa.com', url: `https://gjirafa.com/search?q=${encodedQuery}` },
+      { name: 'eBay Albania', url: `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}` },
+      { name: 'Compari.al', url: `https://compari.al/search?q=${encodedQuery}` },
+      { name: 'Amazon', url: `https://www.amazon.com/s?k=${encodedQuery}` },
       { name: 'Facebook Marketplace', url: `https://www.facebook.com/marketplace/search/?query=${encodedQuery}` },
     ];
 
