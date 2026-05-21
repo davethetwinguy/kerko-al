@@ -2,97 +2,40 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-async function searchGoogle(query, site) {
-  try {
-    const searchUrl = `http://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=${encodeURIComponent(`https://www.google.com/search?q=${query}+site:${site}&num=10`)}`;
-    const res = await fetch(searchUrl);
-    const html = await res.text();
-
-    const listings = [];
-    const linkRegex = /href="(https?:\/\/(?:www\.)?merrjep\.al\/njoftime\/[^"&]+)"/g;
-    const titleRegex = /<h3[^>]*>([^<]+)<\/h3>/g;
-
-    const links = [];
-    const titles = [];
-    let match;
-
-    while ((match = linkRegex.exec(html)) !== null) {
-      links.push(match[1]);
-    }
-    while ((match = titleRegex.exec(html)) !== null) {
-      titles.push(match[1].replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim());
-    }
-
-    for (let i = 0; i < Math.min(links.length, titles.length, 5); i++) {
-      if (titles[i] && links[i]) {
-        listings.push({
-          title: titles[i],
-          url: links[i],
-          source: site
-        });
-      }
-    }
-    return listings;
-  } catch (e) {
-    return [];
-  }
-}
-
 export async function POST(request) {
   try {
     const { query } = await request.json();
+    const encodedQuery = encodeURIComponent(query);
 
-    const [merrjepResults, njoftimeResults] = await Promise.all([
-      searchGoogle(query, 'merrjep.al'),
-      searchGoogle(query, 'njoftime.al'),
-    ]);
+    const sources = [
+      { name: 'Merrjep.al', url: `https://www.merrjep.al/njoftime?q=${encodedQuery}` },
+      { name: 'Njoftime.al', url: `https://njoftime.al/kerko?q=${encodedQuery}` },
+      { name: 'Dyqan24', url: `https://dyqan24.al/search?q=${encodedQuery}` },
+      { name: 'Pepito.al', url: `https://www.pepito.al/search?q=${encodedQuery}` },
+      { name: 'Okazion.al', url: `https://okazion.al/search?q=${encodedQuery}` },
+    ];
 
-    const allResults = [...merrjepResults, ...njoftimeResults];
+    const prompt = `You are a product search assistant for Albania. The user is searching for: "${query}".
 
-    let prompt;
-    if (allResults.length > 0) {
-      prompt = `You are a product search assistant for Albania. The user searched for: "${query}".
-
-Here are real listings found from Albanian websites:
-${JSON.stringify(allResults, null, 2)}
-
-Based on these real listings, return a JSON object. Use the EXACT urls provided:
-{
-  "aiSuggestion": "one sentence recommending the best option and why in Albanian",
-  "results": [
-    {
-      "title": "product title",
-      "price": "estimate a realistic price in Leke based on the product",
-      "source": "source website",
-      "condition": "I ri or Perdorur",
-      "description": "brief description in Albanian",
-      "seller": "unknown",
-      "url": "use the exact url from the listing"
-    }
-  ]
-}
-Return ONLY valid JSON, no extra text.`;
-    } else {
-      prompt = `You are a product search assistant for Albania. The user is searching for: "${query}".
-
-Generate 5 realistic product listings as if from Albanian sites (Merrjep.al, Njoftime.al, Dyqan24, Facebook, Instagram).
+Generate 5 realistic product listings as if from Albanian websites. Each listing must use one of these EXACT urls:
+${sources.map(s => `- ${s.name}: ${s.url}`).join('\n')}
 
 Return ONLY valid JSON:
 {
-  "aiSuggestion": "one sentence recommending the best option and why in Albanian",
+  "aiSuggestion": "one sentence recommending where to find the best deal and why, in Albanian",
   "results": [
     {
-      "title": "product name",
-      "price": "XX,XXX L",
-      "source": "site name",
+      "title": "realistic product name and variant",
+      "price": "realistic price in Leke",
+      "source": "site name from the list above",
       "condition": "I ri or Perdorur",
-      "description": "short description in Albanian",
-      "seller": "seller name",
-      "url": "https://merrjep.al"
+      "description": "short realistic description in Albanian",
+      "seller": "realistic Albanian seller name",
+      "url": "use the EXACT url from the list above for that source"
     }
   ]
-}`;
-    }
+}
+Use each source only once. Sort by best value first.`;
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5',
