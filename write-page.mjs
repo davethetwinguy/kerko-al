@@ -30,7 +30,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b px-6 py-3 flex justify-between items-center">
-        <span className="text-green-700 font-bold text-xl">Kerko.al</span>
+        <span className="text-green-700 font-bold text-xl">Gjej.ai</span>
         <span className="text-xs text-gray-400">Powered by AI</span>
       </nav>
       <div className="bg-green-700 px-6 py-12 text-center">
@@ -87,7 +87,7 @@ export default function Home() {
         )}
       </div>
       <footer className="text-center py-8 text-gray-300 text-xs">
-        <p>2025 Kerko.al - Powered by AI</p>
+        <p>2025 Gjej.ai - Powered by AI</p>
       </footer>
     </main>
   );
