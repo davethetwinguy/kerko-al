@@ -48,8 +48,6 @@ function getSources(query) {
   return [
     { name: 'Merrjep.al', url: `https://www.merrjep.al/njoftime/q-${encodeURIComponent(query.replace(/ /g, '-'))}`, category: 'Te gjitha' },
     { name: 'Gjirafa.com', url: `https://gjirafa.com/Top/Kerko?q=${encodeURIComponent(query)}`, category: 'Te gjitha' },
-    { name: 'Neptun.al', url: `https://www.neptun.al/search-product-result.nspx?q=${encodeURIComponent(query.replace(/ /g, '_'))}`, category: 'Te gjitha' },
-    { name: 'Jumbo.al', url: `https://jumbo.al/sq/catalog?query=${encodeURIComponent(query)}`, category: 'Te gjitha' },
   ];
 }
 
