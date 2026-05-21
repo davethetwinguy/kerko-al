@@ -8,11 +8,11 @@ export async function POST(request) {
     const encodedQuery = encodeURIComponent(query);
 
     const sources = [
-      { name: 'Merrjep.al', url: `https://www.merrjep.al/njoftime?q=${encodedQuery}` },
-      { name: 'Njoftime.al', url: `https://njoftime.al/kerko?q=${encodedQuery}` },
-      { name: 'Dyqan24', url: `https://dyqan24.al/search?q=${encodedQuery}` },
-      { name: 'Pepito.al', url: `https://www.pepito.al/search?q=${encodedQuery}` },
-      { name: 'Okazion.al', url: `https://okazion.al/search?q=${encodedQuery}` },
+      { name: 'Merrjep.al', url: `https://www.merrjep.al/njoftime?q=${encodedQuery}&kategoria=0` },
+      { name: 'Njoftime.al', url: `https://www.njoftime.al/?s=${encodedQuery}` },
+      { name: 'Dyqan24', url: `https://dyqan24.al/?s=${encodedQuery}` },
+      { name: 'Okazion.al', url: `https://okazion.al/?s=${encodedQuery}` },
+      { name: 'Facebook Marketplace', url: `https://www.facebook.com/marketplace/search/?query=${encodedQuery}` },
     ];
 
     const prompt = `You are a product search assistant for Albania. The user is searching for: "${query}".
