@@ -2,34 +2,34 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-async function scrapeMetrjep(query) {
+async function searchGoogle(query, site) {
   try {
-    const url = `http://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=https://www.merrjep.al/njoftime?q=${encodeURIComponent(query)}&render=true`;
-    const res = await fetch(url);
+    const searchUrl = `http://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=${encodeURIComponent(`https://www.google.com/search?q=${query}+site:${site}&num=10`)}`;
+    const res = await fetch(searchUrl);
     const html = await res.text();
-    
-    const listings = [];
-    const regex = /<div[^>]*class="[^"]*listing[^"]*"[^>]*>[\s\S]*?<\/div>/gi;
-    const titleRegex = /class="[^"]*title[^"]*"[^>]*>([^<]+)</i;
-    const priceRegex = /class="[^"]*price[^"]*"[^>]*>([^<]+)</i;
-    const linkRegex = /href="([^"]*njoftime[^"]*)"/i;
 
+    const listings = [];
+    const linkRegex = /href="(https?:\/\/(?:www\.)?merrjep\.al\/njoftime\/[^"&]+)"/g;
+    const titleRegex = /<h3[^>]*>([^<]+)<\/h3>/g;
+
+    const links = [];
+    const titles = [];
     let match;
-    let count = 0;
-    while ((match = regex.exec(html)) !== null && count < 5) {
-      const block = match[0];
-      const titleMatch = block.match(titleRegex);
-      const priceMatch = block.match(priceRegex);
-      const linkMatch = block.match(linkRegex);
-      
-      if (titleMatch && priceMatch) {
+
+    while ((match = linkRegex.exec(html)) !== null) {
+      links.push(match[1]);
+    }
+    while ((match = titleRegex.exec(html)) !== null) {
+      titles.push(match[1].replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim());
+    }
+
+    for (let i = 0; i < Math.min(links.length, titles.length, 5); i++) {
+      if (titles[i] && links[i]) {
         listings.push({
-          title: titleMatch[1].trim(),
-          price: priceMatch[1].trim(),
-          url: linkMatch ? `https://www.merrjep.al${linkMatch[1]}` : 'https://www.merrjep.al',
-          source: 'Merrjep.al'
+          title: titles[i],
+          url: links[i],
+          source: site
         });
-        count++;
       }
     }
     return listings;
@@ -42,27 +42,32 @@ export async function POST(request) {
   try {
     const { query } = await request.json();
 
-    const scrapedListings = await scrapeMetrjep(query);
-    
+    const [merrjepResults, njoftimeResults] = await Promise.all([
+      searchGoogle(query, 'merrjep.al'),
+      searchGoogle(query, 'njoftime.al'),
+    ]);
+
+    const allResults = [...merrjepResults, ...njoftimeResults];
+
     let prompt;
-    if (scrapedListings.length > 0) {
+    if (allResults.length > 0) {
       prompt = `You are a product search assistant for Albania. The user searched for: "${query}".
 
-Here are real listings scraped from Merrjep.al:
-${JSON.stringify(scrapedListings, null, 2)}
+Here are real listings found from Albanian websites:
+${JSON.stringify(allResults, null, 2)}
 
-Based on these real listings, return a JSON object:
+Based on these real listings, return a JSON object. Use the EXACT urls provided:
 {
-  "aiSuggestion": "one sentence recommending the best option and why",
+  "aiSuggestion": "one sentence recommending the best option and why in Albanian",
   "results": [
     {
       "title": "product title",
-      "price": "price as shown",
-      "source": "Merrjep.al",
-      "condition": "I ri or Perdorur based on listing",
+      "price": "estimate a realistic price in Leke based on the product",
+      "source": "source website",
+      "condition": "I ri or Perdorur",
       "description": "brief description in Albanian",
-      "seller": "seller name if available",
-      "url": "real url from the listing"
+      "seller": "unknown",
+      "url": "use the exact url from the listing"
     }
   ]
 }
@@ -74,7 +79,7 @@ Generate 5 realistic product listings as if from Albanian sites (Merrjep.al, Njo
 
 Return ONLY valid JSON:
 {
-  "aiSuggestion": "one sentence recommending the best option and why",
+  "aiSuggestion": "one sentence recommending the best option and why in Albanian",
   "results": [
     {
       "title": "product name",
